@@ -11,7 +11,10 @@ echo "1. Health"
 curl -fsS "$URL/actuator/health"; echo
 
 echo "2. Info"
-curl -fsS "$URL/"; echo
+curl -fsS "$URL/api/info"; echo
+
+echo "2b. Question page"
+curl -fsS "$URL/" | grep -q "Ask your documents" && echo "page OK"
 
 echo "3. Search the seeded sample"
 curl -fsS "${AUTH[@]}" "$URL/api/search?q=Do%20I%20need%20an%20API%20key%20for%20search&k=2"; echo

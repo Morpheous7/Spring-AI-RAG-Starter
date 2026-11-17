@@ -14,7 +14,7 @@ import java.security.MessageDigest;
 
 /**
  * When APP_API_KEY is set, every /api/** request must send it in the X-API-Key header.
- * The info page and health check stay open so Railway's health check keeps working.
+ * The question page, /api/info and the health check stay open; everything else under /api/ needs the key.
  */
 @Component
 public class ApiKeyFilter extends OncePerRequestFilter {
@@ -27,7 +27,8 @@ public class ApiKeyFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return expected == null || !request.getRequestURI().startsWith("/api/");
+        String uri = request.getRequestURI();
+        return expected == null || !uri.startsWith("/api/") || uri.equals("/api/info");
     }
 
     @Override

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ask your documents</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --ink: #1d2433; --muted: #5d6677; --line: #dfe3ea;
+    --accent: #2f6f4f; --accent-ink: #ffffff; --warn: #9a3412; --warn-bg: #fff4ed; --ok-bg: #edf7f1;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #12151b; --card: #1a1f27; --ink: #e8ebf0; --muted: #a0a8b6; --line: #2c333e;
+            --accent: #5fb38a; --accent-ink: #0d1a13; --warn: #fdba8c; --warn-bg: #2a1d15; --ok-bg: #16261d; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 20px 64px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 1.6rem; margin: 0; }
+  h2 { font-size: 1.05rem; margin: 0 0 12px; }
+  .badge { font-size: .8rem; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .sub { color: var(--muted); margin: 6px 0 24px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 18px; }
+  label { display: block; font-weight: 600; font-size: .9rem; margin-bottom: 6px; }
+  input[type=text], input[type=password], textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg); color: var(--ink); font: inherit; }
+  textarea { min-height: 110px; resize: vertical; }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .row > input[type=text] { flex: 1; }
+  button { padding: 10px 18px; border: 0; border-radius: 8px; background: var(--accent); color: var(--accent-ink);
+           font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  button:disabled { opacity: .55; cursor: progress; }
+  .msg { margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-size: .92rem; display: none; }
+  .msg.show { display: block; }
+  .msg.err { background: var(--warn-bg); color: var(--warn); }
+  .msg.ok { background: var(--ok-bg); }
+  .answer { white-space: pre-wrap; margin: 4px 0 16px; }
+  .note { color: var(--muted); font-size: .9rem; margin: 0 0 12px; }
+  .passage { border-top: 1px solid var(--line); padding: 12px 0; }
+  .passage:first-of-type { border-top: 0; }
+  .meta { font-size: .82rem; color: var(--muted); margin-bottom: 4px; }
+  .passage p { margin: 0; white-space: pre-wrap; }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 640px) { .split { grid-template-columns: 1fr; } }
+  .hidden { display: none; }
+  footer { color: var(--muted); font-size: .85rem; text-align: center; margin-top: 28px; }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Ask your documents</h1>
+    <span class="badge" id="mode">Loading…</span>
+  </header>
+  <p class="sub" id="stats">Add documents below, then ask a question in plain English.</p>
+
+  <section id="keyBox" class="hidden" aria-labelledby="keyTitle">
+    <h2 id="keyTitle">Access key</h2>
+    <p class="note">This service is protected. Paste the <strong>APP_API_KEY</strong> value from the service's Variables tab in Railway. It's saved in this browser only.</p>
+    <div class="row">
+      <input type="password" id="apiKey" autocomplete="off" placeholder="Paste your access key">
+      <button class="secondary" id="saveKey" type="button">Save</button>
+    </div>
+    <div class="msg" id="keyMsg" role="status"></div>
+  </section>
+
+  <section aria-labelledby="askTitle">
+    <h2 id="askTitle">Ask a question</h2>
+    <form id="askForm" class="row">
+      <input type="text" id="question" placeholder="e.g. Do I need an API key for search?" required>
+      <button id="askBtn" type="submit">Ask</button>
+    </form>
+    <div class="msg" id="askMsg" role="status"></div>
+    <div id="results" aria-live="polite"></div>
+  </section>
+
+  <div class="split">
+    <section aria-labelledby="uploadTitle">
+      <h2 id="uploadTitle">Upload a file</h2>
+      <p class="note">PDF, TXT or Markdown, up to 20 MB. Scanned PDFs (pictures of pages) can't be read.</p>
+      <form id="uploadForm">
+        <input type="file" id="file" accept=".pdf,.txt,.md" required>
+        <div style="margin-top:12px"><button id="uploadBtn" type="submit">Upload</button></div>
+      </form>
+      <div class="msg" id="uploadMsg" role="status"></div>
+    </section>
+
+    <section aria-labelledby="pasteTitle">
+      <h2 id="pasteTitle">Paste text</h2>
+      <form id="pasteForm">
+        <label for="source">Name</label>
+        <input type="text" id="source" placeholder="e.g. Travel policy" style="margin-bottom:10px">
+        <label for="text">Text</label>
+        <textarea id="text" required></textarea>
+        <div style="margin-top:12px"><button id="pasteBtn" type="submit">Add text</button></div>
+      </form>
+      <div class="msg" id="pasteMsg" role="status"></div>
+    </section>
+  </div>
+
+  <footer>Spring AI RAG Starter · <a href="/api/info">API info</a> · <a href="/actuator/health">Health</a></footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var KEY_NAME = "rag-starter-api-key";
+  var apiKey = "";
+  try { apiKey = window.localStorage.getItem(KEY_NAME) || ""; } catch (e) { apiKey = ""; }
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function show(id, text, isError) {
+    var el = $(id);
+    el.textContent = text;
+    el.className = "msg show " + (isError ? "err" : "ok");
+  }
+  function hide(id) { $(id).className = "msg"; }
+
+  function headers(extra) {
+    var h = extra || {};
+    if (apiKey) { h["X-API-Key"] = apiKey; }
+    return h;
+  }
+
+  function readError(res) {
+    return res.text().then(function (body) {
+      try {
+        var data = JSON.parse(body);
+        if (data.message) { return data.message; }
+        if (data.error) { return data.error; }
+      } catch (e) { /* not JSON */ }
+      if (res.status === 401) { return "The access key is missing or wrong."; }
+      if (res.status === 413) { return "That file is larger than 20 MB."; }
+      return "Something went wrong (HTTP " + res.status + ").";
+    });
+  }
+
+  function call(url, options) {
+    return fetch(url, options).then(function (res) {
+      if (res.ok) { return res.json(); }
+      return readError(res).then(function (msg) {
+        if (res.status === 401) { $("keyBox").classList.remove("hidden"); }
+        throw new Error(msg);
+      });
+    });
+  }
+
+  function refreshStats() {
+    call("/api/stats", { headers: headers() }).then(function (s) {
+      $("stats").textContent = s.storedChunks + " passages stored. Add documents below, then ask a question in plain English.";
+    }).catch(function () { /* key not entered yet */ });
+  }
+
+  function busy(btn, on) { $(btn).disabled = on; }
+
+  call("/api/info", {}).then(function (info) {
+    $("mode").textContent = info.mode === "answer" ? "Written answers on" : "Search only";
+    if (info.apiKeyRequired) {
+      $("keyBox").classList.remove("hidden");
+      $("apiKey").value = apiKey;
+    }
+    refreshStats();
+  }).catch(function (e) { $("mode").textContent = "Offline"; show("askMsg", e.message, true); });
+
+  $("saveKey").addEventListener("click", function () {
+    apiKey = $("apiKey").value.trim();
+    try { window.localStorage.setItem(KEY_NAME, apiKey); } catch (e) { /* storage unavailable: keep in memory */ }
+    call("/api/stats", { headers: headers() }).then(function () {
+      show("keyMsg", "Key accepted.", false);
+      refreshStats();
+    }).catch(function (e) { show("keyMsg", e.message, true); });
+  });
+
+  $("askForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var q = $("question").value.trim();
+    if (!q) { return; }
+    hide("askMsg");
+    $("results").textContent = "";
+    busy("askBtn", true);
+    call("/api/ask", {
+      method: "POST",
+      headers: headers({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ question: q, k: 4 })
+    }).then(function (r) {
+      var box = $("results");
+      if (r.answer) {
+        var h = document.createElement("h2"); h.textContent = "Answer"; box.appendChild(h);
+        var a = document.createElement("p"); a.className = "answer"; a.textContent = r.answer; box.appendChild(a);
+      }
+      if (!r.sources || r.sources.length === 0) {
+        show("askMsg", "No stored passages yet. Upload a file or paste some text first.", true);
+        return;
+      }
+      var t = document.createElement("h2");
+      t.textContent = r.answer ? "Sources" : "Best-matching passages";
+      box.appendChild(t);
+      if (!r.answer) {
+        var n = document.createElement("p"); n.className = "note";
+        n.textContent = "Written answers are off. Set AI_CHAT=openai and OPENAI_API_KEY in Railway to turn them on.";
+        box.appendChild(n);
+      }
+      r.sources.forEach(function (p) {
+        var d = document.createElement("div"); d.className = "passage";
+        var m = document.createElement("div"); m.className = "meta";
+        m.textContent = "[" + p.rank + "] " + p.source + (p.score != null ? " · match " + Math.round(p.score * 100) + "%" : "");
+        var body = document.createElement("p"); body.textContent = p.text;
+        d.appendChild(m); d.appendChild(body); box.appendChild(d);
+      });
+    }).catch(function (e) { show("askMsg", e.message, true); })
+      .then(function () { busy("askBtn", false); });
+  });
+
+  $("uploadForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var f = $("file").files[0];
+    if (!f) { return; }
+    hide("uploadMsg");
+    busy("uploadBtn", true);
+    var form = new FormData();
+    form.append("file", f);
+    call("/api/documents/upload", { method: "POST", headers: headers(), body: form }).then(function (r) {
+      show("uploadMsg", "Added " + r.source + " (" + r.chunks + " passages).", false);
+      $("file").value = "";
+      refreshStats();
+    }).catch(function (e) { show("uploadMsg", e.message, true); })
+      .then(function () { busy("uploadBtn", false); });
+  });
+
+  $("pasteForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var text = $("text").value.trim();
+    if (!text) { return; }
+    hide("pasteMsg");
+    busy("pasteBtn", true);
+    call("/api/documents", {
+      method: "POST",
+      headers: headers({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ text: text, source: $("source").value.trim() || "pasted text" })
+    }).then(function (r) {
+      show("pasteMsg", "Added " + r.source + " (" + r.chunks + " passages).", false);
+      $("text").value = "";
+      refreshStats();
+    }).catch(function (e) { show("pasteMsg", e.message, true); })
+      .then(function () { busy("pasteBtn", false); });
+  });
+})();
+</script>
+</body>
+</html>

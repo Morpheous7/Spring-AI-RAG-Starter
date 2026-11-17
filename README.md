@@ -3,7 +3,6 @@
 A Java retrieval-augmented generation (RAG) API you can deploy in one click: Spring Boot 4.1, Spring AI 2.0 and Postgres with pgvector.
 
 - **Search works with no API key.** Embeddings run inside the app (all-MiniLM-L6-v2 via ONNX, 384 dimensions).
-- **Two-stage search.** Vector search gathers 20 candidates, then a cross-encoder reranker (ms-marco-MiniLM-L6-v2, Apache-2.0) reads each one next to the question and puts the best answer first.
 - **Answers are optional.** Set `AI_CHAT=openai` and `OPENAI_API_KEY` to get written answers that cite the passages they used.
 - **Ready on first boot.** A sample document is loaded so `/api/ask` returns results immediately.
 
@@ -14,7 +13,7 @@ A Java retrieval-augmented generation (RAG) API you can deploy in one click: Spr
 | GET | `/` | Mode, stored chunk count, endpoint list |
 | POST | `/api/documents` | Add text: `{"text": "...", "source": "handbook"}` |
 | POST | `/api/documents/upload` | Upload a `.txt` or `.md` file (multipart field `file`, 5 MB max) |
-| GET | `/api/search?q=...&k=4` | Best-matching passages with vector `score` and `rerankScore` |
+| GET | `/api/search?q=...&k=4` | Best-matching passages with scores |
 | POST | `/api/ask` | `{"question": "...", "k": 4}`: answer plus sources, or passages only in search-only mode |
 | GET | `/actuator/health` | Health check |
 
@@ -33,8 +32,6 @@ curl -s "$URL/api/ask" -H 'Content-Type: application/json' \
 | `OPENAI_API_KEY` | none | Needed when `AI_CHAT=openai` |
 | `OPENAI_CHAT_MODEL` | `gpt-4o-mini` | Chat model for answers |
 | `APP_API_KEY` | none | When set, all `/api/**` calls must send it as `X-API-Key` |
-| `RERANK` | `true` | Rerank vector results with the built-in cross-encoder |
-| `RERANK_POOL` | `20` | How many vector matches the reranker considers |
 | `SEED_SAMPLE` | `true` | Load the sample document on an empty database |
 | `SEARCH_TOP_K` | `4` | Default passages per search (max 20 per request) |
 | `SEARCH_SIMILARITY_THRESHOLD` | `0.0` | Minimum similarity score (0 to 1); 0 always returns the top matches |

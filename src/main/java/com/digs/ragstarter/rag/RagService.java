@@ -29,22 +29,16 @@ public class RagService {
     private final JdbcTemplate jdbcTemplate;
     private final ChatClient chatClient; // null when answer generation is off
     private final TextChunker chunker = new TextChunker(600, 100);
-    private final Reranker reranker;
     private final int defaultTopK;
     private final double similarityThreshold;
-    private final int rerankPool;
 
     public RagService(VectorStore vectorStore,
                       JdbcTemplate jdbcTemplate,
                       ObjectProvider<ChatModel> chatModel,
-                      Reranker reranker,
                       @Value("${app.search.top-k:4}") int defaultTopK,
-                      @Value("${app.search.similarity-threshold:0.0}") double similarityThreshold,
-                      @Value("${app.rerank.pool:20}") int rerankPool) {
+                      @Value("${app.search.similarity-threshold:0.0}") double similarityThreshold) {
         this.vectorStore = vectorStore;
         this.jdbcTemplate = jdbcTemplate;
-        this.reranker = reranker;
-        this.rerankPool = Math.max(rerankPool, 1);
         // Ask for the model itself, not ChatClient.Builder: Spring AI registers the builder bean
         // even when no chat model exists, and resolving it then fails at startup.
         ChatModel model = chatModel.getIfAvailable();
@@ -55,10 +49,6 @@ public class RagService {
 
     public boolean answersEnabled() {
         return chatClient != null;
-    }
-
-    public boolean rerankingEnabled() {
-        return reranker.enabled();
     }
 
     public long documentCount() {
@@ -83,49 +73,18 @@ public class RagService {
 
     public List<Passage> search(String query, Integer topK) {
         int k = topK == null || topK < 1 ? defaultTopK : Math.min(topK, 20);
-        // With reranking on, fetch a wider pool by vector similarity, then let the cross-encoder pick the best k.
-        int fetch = reranker.enabled() ? Math.max(k, rerankPool) : k;
         List<Document> hits = vectorStore.similaritySearch(SearchRequest.builder()
                 .query(query)
-                .topK(fetch)
+                .topK(k)
                 .similarityThreshold(similarityThreshold)
                 .build());
-
-        List<Double> rerankScores = new ArrayList<>(hits.size());
-        List<Document> ordered = hits;
-        if (reranker.enabled() && hits.size() > 1) {
-            try {
-                List<String> texts = new ArrayList<>(hits.size());
-                for (Document d : hits) {
-                    texts.add(d.getText() == null ? "" : d.getText());
-                }
-                float[] scores = reranker.score(query, texts);
-                Integer[] order = new Integer[hits.size()];
-                for (int i = 0; i < order.length; i++) {
-                    order[i] = i;
-                }
-                java.util.Arrays.sort(order, (a, b) -> Float.compare(scores[b], scores[a]));
-                ordered = new ArrayList<>(hits.size());
-                for (Integer idx : order) {
-                    ordered.add(hits.get(idx));
-                    rerankScores.add((double) scores[idx]);
-                }
-            } catch (Exception e) {
-                org.slf4j.LoggerFactory.getLogger(RagService.class).warn("Reranking failed; using vector order.", e);
-                ordered = hits;
-                rerankScores.clear();
-            }
-        }
-
-        int n = Math.min(k, ordered.size());
-        List<Passage> passages = new ArrayList<>(n);
-        for (int i = 0; i < n; i++) {
-            Document doc = ordered.get(i);
+        List<Passage> passages = new ArrayList<>(hits.size());
+        for (int i = 0; i < hits.size(); i++) {
+            Document doc = hits.get(i);
             Object source = doc.getMetadata().get("source");
             passages.add(new Passage(i + 1,
                     source == null ? "untitled" : source.toString(),
                     doc.getScore(),
-                    rerankScores.isEmpty() ? null : rerankScores.get(i),
                     doc.getText()));
         }
         return passages;
@@ -153,7 +112,7 @@ public class RagService {
         return new AskResponse(question, answer, "answer", passages);
     }
 
-    public record Passage(int rank, String source, Double score, Double rerankScore, String text) {
+    public record Passage(int rank, String source, Double score, String text) {
     }
 
     public record AskResponse(String question, String answer, String mode, List<Passage> sources) {

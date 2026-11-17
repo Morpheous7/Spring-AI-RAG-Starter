@@ -30,7 +30,6 @@ public class RagController {
         Map<String, Object> info = new LinkedHashMap<>();
         info.put("name", "Spring AI RAG Starter");
         info.put("mode", ragService.answersEnabled() ? "answer" : "search-only");
-        info.put("reranking", ragService.rerankingEnabled());
         info.put("storedChunks", ragService.documentCount());
         info.put("endpoints", List.of(
                 "POST /api/documents  {\"text\": \"...\", \"source\": \"name\"}",

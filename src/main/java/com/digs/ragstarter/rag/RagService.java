@@ -28,7 +28,7 @@ public class RagService {
     private final VectorStore vectorStore;
     private final JdbcTemplate jdbcTemplate;
     private final ChatClient chatClient; // null when answer generation is off
-    private final TextChunker chunker = new TextChunker(1000, 150);
+    private final TextChunker chunker = new TextChunker(600, 100);
     private final int defaultTopK;
     private final double similarityThreshold;
 
@@ -36,7 +36,7 @@ public class RagService {
                       JdbcTemplate jdbcTemplate,
                       ObjectProvider<ChatModel> chatModel,
                       @Value("${app.search.top-k:4}") int defaultTopK,
-                      @Value("${app.search.similarity-threshold:0.3}") double similarityThreshold) {
+                      @Value("${app.search.similarity-threshold:0.0}") double similarityThreshold) {
         this.vectorStore = vectorStore;
         this.jdbcTemplate = jdbcTemplate;
         // Ask for the model itself, not ChatClient.Builder: Spring AI registers the builder bean

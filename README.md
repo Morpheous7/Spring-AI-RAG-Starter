@@ -34,7 +34,8 @@ curl -s "$URL/api/ask" -H 'Content-Type: application/json' \
 | `APP_API_KEY` | none | When set, all `/api/**` calls must send it as `X-API-Key` |
 | `SEED_SAMPLE` | `true` | Load the sample document on an empty database |
 | `SEARCH_TOP_K` | `4` | Default passages per search (max 20 per request) |
-| `SEARCH_SIMILARITY_THRESHOLD` | `0.3` | Minimum similarity (0 to 1) |
+| `SEARCH_SIMILARITY_THRESHOLD` | `0.0` | Minimum similarity score (0 to 1); 0 always returns the top matches |
+| `RESET_VECTOR_STORE` | `false` | Set `true` for one deploy to drop and recreate the table (deletes all documents) |
 
 ## Notes
 

@@ -1,5 +1,7 @@
 # Spring AI RAG Starter (Spring Boot 4 + pgvector)
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/spring-ai-rag-starter?utm_medium=integration&utm_source=button&utm_campaign=spring-ai-rag-starter)
+
 A Java retrieval-augmented generation (RAG) API you can deploy in one click: Spring Boot 4.1, Spring AI 2.0 and Postgres with pgvector.
 
 - **Search works with no API key.** Embeddings run inside the app (all-MiniLM-L6-v2 via ONNX, 384 dimensions).

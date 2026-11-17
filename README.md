@@ -38,7 +38,7 @@ curl -s "$URL/api/ask" -H 'Content-Type: application/json' \
 
 ## Notes
 
-- First start downloads the ~90 MB embedding model and caches it; allow a minute or two. The health check timeout is 300 seconds.
+- The embedding model ships inside the app, so nothing is downloaded at start-up. Startup takes about 10 seconds.
 - Give the service at least 1 GB of memory; the embedding model runs in-process.
 - Changing the embedding model's dimensions means recreating the `vector_store` table.
 - Set `APP_API_KEY` before putting real documents in a public deployment.

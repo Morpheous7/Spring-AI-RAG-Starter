@@ -2,6 +2,7 @@ package com.digs.ragstarter.rag;
 
 import com.digs.ragstarter.support.TextChunker;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -33,13 +34,15 @@ public class RagService {
 
     public RagService(VectorStore vectorStore,
                       JdbcTemplate jdbcTemplate,
-                      ObjectProvider<ChatClient.Builder> chatClientBuilder,
+                      ObjectProvider<ChatModel> chatModel,
                       @Value("${app.search.top-k:4}") int defaultTopK,
                       @Value("${app.search.similarity-threshold:0.3}") double similarityThreshold) {
         this.vectorStore = vectorStore;
         this.jdbcTemplate = jdbcTemplate;
-        ChatClient.Builder builder = chatClientBuilder.getIfAvailable();
-        this.chatClient = builder == null ? null : builder.build();
+        // Ask for the model itself, not ChatClient.Builder: Spring AI registers the builder bean
+        // even when no chat model exists, and resolving it then fails at startup.
+        ChatModel model = chatModel.getIfAvailable();
+        this.chatClient = model == null ? null : ChatClient.builder(model).build();
         this.defaultTopK = defaultTopK;
         this.similarityThreshold = similarityThreshold;
     }

@@ -10,6 +10,9 @@ RUN mvn -B package
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 RUN useradd --system --create-home app && mkdir -p /app/model-cache && chown -R app /app
+# Reranker: cross-encoder/ms-marco-MiniLM-L6-v2 (Apache-2.0), baked in so nothing downloads at start-up
+ADD --chmod=644 https://huggingface.co/cross-encoder/ms-marco-MiniLM-L6-v2/resolve/main/onnx/model.onnx /app/models/reranker/model.onnx
+ADD --chmod=644 https://huggingface.co/cross-encoder/ms-marco-MiniLM-L6-v2/resolve/main/tokenizer.json /app/models/reranker/tokenizer.json
 COPY --from=build /src/target/app.jar /app/app.jar
 USER app
 ENV MODEL_CACHE_DIR=/app/model-cache \

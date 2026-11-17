@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- Original DIGS LLC icon: a document with a search lens. -->
+  <path d="M60 28h96l44 44v140a16 16 0 0 1-16 16H60a16 16 0 0 1-16-16V44a16 16 0 0 1 16-16z" fill="#5fb38a"/>
+  <path d="M156 28v32a12 12 0 0 0 12 12h32z" fill="#3d8a64"/>
+  <rect x="68" y="92" width="96" height="12" rx="6" fill="#eaf6ef"/>
+  <rect x="68" y="118" width="72" height="12" rx="6" fill="#eaf6ef"/>
+  <rect x="68" y="144" width="52" height="12" rx="6" fill="#eaf6ef"/>
+  <circle cx="164" cy="168" r="34" fill="#1d2433" stroke="#eaf6ef" stroke-width="12"/>
+  <path d="M188 192l30 30" stroke="#1d2433" stroke-width="22" stroke-linecap="round"/>
+  <path d="M188 192l30 30" stroke="#eaf6ef" stroke-width="10" stroke-linecap="round"/>
+</svg>
